@@ -46,15 +46,21 @@ export default function App() {
 
   // Mnemonic / Private Key / XPub
   useEffect(() => {
+    if (mnemonic) return;
+    let newMnemonic = "";
+    if (process.env.REACT_APP_MNEMONIC) {
+      newMnemonic = process.env.REACT_APP_MNEMONIC;
+    } else {
+      newMnemonic = getNewMnemonic();
+    }
+    setMnemonic(newMnemonic);
+  }, [mnemonic]);
+
+  useEffect(() => {
+    if (!mnemonic) return;
+
     const getSeed = async () => {
       try {
-        let newMnemonic = "";
-        if (process.env.REACT_APP_MNEMONIC) {
-          newMnemonic = process.env.REACT_APP_MNEMONIC;
-        } else {
-          newMnemonic = getNewMnemonic();
-        }
-        setMnemonic(newMnemonic);
         const newMasterPrivateKey = await getMasterPrivateKey(mnemonic);
         setMasterFingerprint(newMasterPrivateKey.fingerprint);
         const derivationPath = "m/84'/0'/0'"; // P2WPKH
