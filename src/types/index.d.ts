@@ -7,6 +7,7 @@ import {
 } from "src/types/blockstream";
 
 export * from "./blockstream";
+export * from "./local-bitapi";
 
 export interface Address extends payments.Payment {
   derivationPath: string;
