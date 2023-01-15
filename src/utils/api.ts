@@ -112,7 +112,8 @@ export async function broadcastTx(network: Network, txHex: string) {
         return blockstreamBroadcast(txHex);
     }
     if (network === networks.regtest) {
-        return localbitapiBroadcast({ rawTransaction: txHex });
+        const { txid } = await localbitapiBroadcast({ rawTransaction: txHex });
+        return txid;
     }
 
     throw new Error(`Network not supported: Cannot broadcast to network`)

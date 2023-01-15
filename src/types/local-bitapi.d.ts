@@ -69,13 +69,7 @@ export interface LocalBitApiTransactionBroadcastBody {
     rawTransaction: string;
 }
 
-export interface LocalBitApiBroadcastedTransaction {
-    txid: string;
-}
-
 export interface LocalBitApiTransactionBroadcastResponse {
-    broadcast: boolean;
-    transaction: LoclBitApiBroadcastedTransaction;
-    errors?: string[];
+    txid: string;
 }
 

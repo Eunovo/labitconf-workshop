@@ -2,9 +2,9 @@ import axios from "axios";
 import {
     Address,
     LocalBitApiTransactionBroadcastBody,
-    LocalBitApiTransactionBroadcastResponse,
     LocalBitApiTransaction,
-    LocalBitApiUTXO
+    LocalBitApiUTXO,
+    LocalBitApiTransactionBroadcastResponse
 } from "src/types";
 
 const BASE_URL = "http://localhost:4000/api";
