@@ -1,10 +1,12 @@
 import { Address, BlockstreamAPITransactionResponse } from "src/types";
 import { serializeTxs } from ".";
 import {
+    broadcastTx as blockstreamBroadcast,
     getTransactionsFromAddress,
     getUtxosFromAddress as getUtxosUsingBlockstream
 } from "./blockstream-api";
 import {
+    broadcastTx as localbitapiBroadcast,
     getTransactionsFromAddress as getLocalTranxFromAddress,
     getUtxosFromAddress as getUtxosUsingLocalBitapi
 } from "./local-bitapi";
@@ -99,8 +101,19 @@ export async function getUtxosFromAddress(
                 block_hash: '',
                 block_time: 0,
             },
-            value: Math.trunc(utxo.amount * 1000000),
+            value: utxo.amount * 100000000,
         }));
     }
     return [];
+}
+
+export async function broadcastTx(network: Network, txHex: string) {
+    if (network === networks.bitcoin) {
+        return blockstreamBroadcast(txHex);
+    }
+    if (network === networks.regtest) {
+        return localbitapiBroadcast({ rawTransaction: txHex });
+    }
+
+    throw new Error(`Network not supported: Cannot broadcast to network`)
 }
