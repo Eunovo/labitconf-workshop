@@ -7,7 +7,7 @@ import {
     LocalBitApiUTXOResponse
 } from "src/types";
 
-const BASE_URL = "https://blockstream.info/api";
+const BASE_URL = "http://localhost:4000/api";
 
 export const getTransactionsFromAddress = async (
   address: Address
@@ -22,7 +22,7 @@ export const getUtxosFromAddress = async (
   address: Address
 ): Promise<LocalBitApiUTXOResponse> => {
   const { data } = await axios.get(
-    `${BASE_URL}/utxo/${address.address}`
+    `${BASE_URL}/utxos/${address.address}`
   );
 
   return data;
