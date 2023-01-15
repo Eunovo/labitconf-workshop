@@ -124,7 +124,7 @@ export const createLockTransaction = async (
 ) => {
   const preimage = Buffer.from(secret, 'hex')
   const preimageHash = crypto.hash160(preimage);
-  const locktime = Math.floor((Date.now() / 1000) + (4 * 7 * 24 * 60 * 60)) // 4 weeks in the future
+  const locktime = Math.floor((Date.now() / 1000) + (60 * 60)) // 1 hour in the future
   const recipientAddr = address.fromBech32(recipientAddress);
   if (!revocationAddress.address)
     throw new Error(`Revocation Address not set`);
