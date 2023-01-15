@@ -99,7 +99,7 @@ export async function getUtxosFromAddress(
                 block_hash: '',
                 block_time: 0,
             },
-            value: utxo.amount * 1000000,
+            value: Math.trunc(utxo.amount * 1000000),
         }));
     }
     return [];
