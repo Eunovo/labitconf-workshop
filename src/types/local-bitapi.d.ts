@@ -1,26 +1,31 @@
-interface IVin {
-    txid: string;
-    vout: number;
-    scriptSig: {
-      asm: string;
-      hex: string;
-    },
-    sequence: number;
-    txinwitness: string[];
-}
-interface IVout {
-    value: number;
-    n: number;
-    scriptPubKey: {
-      asm: string;
-      hex: string;
-      reqSigs: number;
-      type: string;
-      addresses: string[];
-    }
+interface ScriptPubKey {
+    asm: string;
+    hex: string;
+    address: string;
+    type: string;
 }
 
-export interface LocalBitApiTransaction {
+interface ScriptSig {
+    asm: string;
+    hex: string;
+}
+
+interface VOut {
+    value: number;
+    n: number;
+    scriptPubKey: ScriptPubKey;
+}
+
+interface Vin {
+    txid: string;
+    vout: number;
+    coinbase?: string;
+    scriptSig?: ScriptSig;
+    txinwitness: string[];
+    sequence: number;
+}
+
+interface LocalBitApiTransaction {
     txid: string;
     hash: string;
     version: number;
@@ -28,14 +33,14 @@ export interface LocalBitApiTransaction {
     vsize: number;
     weight: number;
     locktime: number;
-    vin: IVin[];
-    vout: IVout[];
-    hex: string;
+    blockheight: number;
+    blocktime: number;
     blockhash: string;
     confirmations: number;
-    time: number;
-    blocktime: number;
+    vin: Vin[];
+    vout: VOut[];
 }
+
 
 export interface LocalBitApiTransactionResponse {
     transactions: LocalBitApiTransaction[];

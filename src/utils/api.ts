@@ -34,36 +34,39 @@ export async function fetchTransactions(
                 );
                 currentTransactionBatch.push(
                     ...transactions.map((tranx) => {
-                        // const inputSum = tranx.vin.reduce((sum, input) => sum + input.value, 0);
-                        // const outputSum = tranx.vout.reduce((sum, output) => sum + output.value, 0);
-                        const fee = 0;
                         return {
-                            ...tranx,
+                            txid: tranx.txid,
+                            version: tranx.version,
+                            locktime: tranx.locktime,
+                            size: tranx.size,
+                            weight: tranx.weight,
                             vin: tranx.vin.map((vin) => ({
-                                ...vin,
+                                txid: vin.txid,
+                                vout: vin.vout,
                                 prevout: {
-                                    scriptpubkey: '',
-                                    scriptpubkey_asm: '',
-                                    scriptpubkey_type: '',
-                                    scriptpubkey_address: '',
-                                    value: 0,
+                                    scriptpubkey: "",
+                                    scriptpubkey_asm: "",
+                                    scriptpubkey_type: "",
+                                    scriptpubkey_address: "",
+                                    value: 0
                                 },
-                                scriptsig: vin.scriptSig.hex,
-                                scriptsig_asm: vin.scriptSig.asm,
+                                scriptsig: vin.scriptSig?.hex ?? "",
+                                scriptsig_asm: vin.scriptSig?.asm ?? "",
                                 witness: vin.txinwitness,
-                                is_coinbase: false,
+                                is_coinbase: Boolean(vin.coinbase),
+                                sequence: vin.sequence
                             })),
                             vout: tranx.vout.map((vout) => ({
                                 scriptpubkey: vout.scriptPubKey.hex,
                                 scriptpubkey_asm: vout.scriptPubKey.asm,
                                 scriptpubkey_type: vout.scriptPubKey.type,
-                                scriptpubkey_address: vout.scriptPubKey.addresses.join(','),
-                                value: vout.value,
+                                scriptpubkey_address: vout.scriptPubKey.address,
+                                value: vout.value * 100000000
                             })),
-                            fee,
+                            fee: 0,
                             status: {
                                 confirmed: tranx.confirmations > 0,
-                                block_height: 0,
+                                block_height: tranx.blockheight,
                                 block_hash: tranx.blockhash,
                                 block_time: tranx.blocktime,
                             }
