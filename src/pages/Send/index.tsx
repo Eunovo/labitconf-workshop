@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Psbt } from "bitcoinjs-lib";
+import { Network, Psbt } from "bitcoinjs-lib";
 
 import { broadcastTx } from "src/utils/blockstream-api";
 
@@ -12,9 +12,10 @@ interface Props {
   utxos: DecoratedUtxo[];
   changeAddresses: Address[];
   mnemonic: string;
+  network: Network
 }
 
-export default function Send({ utxos, changeAddresses, mnemonic }: Props) {
+export default function Send({ utxos, changeAddresses, mnemonic, network }: Props) {
   const [step, setStep] = useState(0); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [transaction, setTransaction] = useState<Psbt | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState("");

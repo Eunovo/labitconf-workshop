@@ -63,7 +63,8 @@ export const createTransasction = async (
   utxos: DecoratedUtxo[],
   recipientAddress: string,
   amountInSatoshis: number,
-  changeAddress: Address
+  changeAddress: Address,
+  network: Network
 ) => {
   // const feeRate = await getFeeRates();
 
@@ -81,7 +82,7 @@ export const createTransasction = async (
   if (!inputs || !outputs) throw new Error("Unable to construct transaction");
   if (fee > amountInSatoshis) throw new Error("Fee is too high!");
 
-  const psbt = new Psbt({ network: networks.bitcoin });
+  const psbt = new Psbt({ network });
   psbt.setVersion(2); // These are defaults. This line is not needed.
   psbt.setLocktime(0); // These are defaults. This line is not needed.
 
@@ -119,7 +120,8 @@ export const createLockTransaction = async (
   recipientAddress: string,
   revocationAddress: Address,
   amountInSatoshis: number,
-  changeAddress: Address
+  changeAddress: Address,
+  network: Network
 ) => {
   const preimage = Buffer.from(secret, 'hex')
   const preimageHash = crypto.hash160(preimage);
@@ -154,10 +156,9 @@ export const createLockTransaction = async (
   ]);
 
   const p2wsh = payments.p2wsh({
-    redeem: { output: locking_script, network: networks.bitcoin },
-    network: networks.bitcoin
+    redeem: { output: locking_script, network },
+    network
   });
-  console.log(p2wsh.address);
 
   if (!p2wsh.address)
     throw new Error('Could not create P2WSH address');
@@ -177,7 +178,7 @@ export const createLockTransaction = async (
   if (fee > amountInSatoshis) throw new Error("Fee is too high!");
 
   // Now you can create a transaction that sends some bitcoins to this P2wsh address
-  const psbt = new Psbt({ network: networks.bitcoin })
+  const psbt = new Psbt({ network })
 
   inputs.forEach((input) => {
     psbt.addInput({
@@ -209,10 +210,11 @@ export const createLockTransaction = async (
 
 export const signTransaction = async (
   psbt: Psbt,
-  mnemonic: string
+  mnemonic: string,
+  network: Network
 ): Promise<Psbt> => {
   const seed = await mnemonicToSeed(mnemonic);
-  const root = bip32.fromSeed(seed, networks.bitcoin);
+  const root = bip32.fromSeed(seed, network);
 
   psbt.signAllInputsHD(root);
   psbt.validateSignaturesOfAllInputs();

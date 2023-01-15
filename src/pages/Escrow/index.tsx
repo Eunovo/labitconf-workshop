@@ -2,14 +2,16 @@ import { useState } from "react";
 
 import { Address, DecoratedUtxo } from "src/types";
 import PayToEscrow from "./components/PayToEscrow";
+import { Network } from "bitcoinjs-lib";
 
 interface Props {
     utxos: DecoratedUtxo[];
     mnemonic: string;
-    changeAddresses: Address[]
+    changeAddresses: Address[];
+    network: Network;
 }
 
-export default function Escrow({ utxos, mnemonic, changeAddresses }: Props) {
+export default function Escrow({ utxos, mnemonic, changeAddresses, network }: Props) {
     const [currentTab, setCurrentTab] = useState("create");
     
 
@@ -84,6 +86,8 @@ export default function Escrow({ utxos, mnemonic, changeAddresses }: Props) {
                                         utxos={utxos}
                                         revocationAddress={changeAddresses[0]}
                                         changeAddress={changeAddresses[1]}
+                                        network={network}
+                                        mnemonic={mnemonic}
                                     />
                                 )
                             ) : null}

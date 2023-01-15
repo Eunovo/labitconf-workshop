@@ -1,18 +1,20 @@
-import { Psbt } from "bitcoinjs-lib";
+import { Network, Psbt } from "bitcoinjs-lib";
 import { useState } from "react";
 import CreateTxForm from "./CreateTxForm";
 import TransactionSummary from "./TransactionSummary";
 import { broadcastTx } from "src/utils/blockstream-api";
 import { Address, DecoratedUtxo } from "src/types";
-import { createLockTransaction } from "src/utils/bitcoinjs-lib";
+import { createLockTransaction, signTransaction } from "src/utils/bitcoinjs-lib";
 
 interface Props {
   utxos: DecoratedUtxo[];
   revocationAddress: Address,
-  changeAddress: Address
+  changeAddress: Address,
+  mnemonic: string,
+  network: Network
 }
 
-export default function PayToEscrow({ utxos, revocationAddress, changeAddress }: Props) {
+export default function PayToEscrow({ utxos, mnemonic, revocationAddress, changeAddress, network }: Props) {
     const [step, setStep] = useState(0); // eslint-disable-line @typescript-eslint/no-unused-vars
     const [transaction, setTransaction] = useState<Psbt | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
     const [error, setError] = useState("");
@@ -23,15 +25,17 @@ export default function PayToEscrow({ utxos, revocationAddress, changeAddress }:
         amountToSend: number
     ) => {
         try {
+            const tranx = await createLockTransaction(
+              utxos,
+              secret,
+              recipientAddress,
+              revocationAddress,
+              amountToSend,
+              changeAddress,
+              network
+            );
             setTransaction(
-                await createLockTransaction(
-                  utxos,
-                  secret,
-                  recipientAddress,
-                  revocationAddress,
-                  amountToSend,
-                  changeAddress
-                )
+              await signTransaction(tranx, mnemonic, network)  
             );
             setStep(1);
         } catch (e) {

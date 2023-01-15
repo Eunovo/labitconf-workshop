@@ -194,6 +194,7 @@ export default function App() {
               utxos={utxos}
               changeAddresses={changeAddresses}
               mnemonic={mnemonic}
+              network={network}
             />
           </Route>
           <Route exact path="/receive">
@@ -210,6 +211,7 @@ export default function App() {
               utxos={utxos}
               mnemonic={mnemonic}
               changeAddresses={changeAddresses}
+              network={network}
             />
           </Route>
           <Route exact path="/settings">
