@@ -138,7 +138,6 @@ export default function App() {
         for (let i = 0; i < allAddresses.length; i++) {
           const currentAddress: Address = allAddresses[i];
           const utxos = await getUtxosFromAddress(currentAddress, network);
-
           if (!utxos) return;
 
           for (let j = 0; j < utxos.length; j++) {

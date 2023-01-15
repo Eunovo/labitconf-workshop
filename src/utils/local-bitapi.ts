@@ -3,15 +3,15 @@ import {
     Address,
     LocalBitApiTransactionBroadcastBody,
     LocalBitApiTransactionBroadcastResponse,
-    LocalBitApiTransactionResponse,
-    LocalBitApiUTXOResponse
+    LocalBitApiTransaction,
+    LocalBitApiUTXO
 } from "src/types";
 
 const BASE_URL = "http://localhost:4000/api";
 
 export const getTransactionsFromAddress = async (
   address: Address
-): Promise<LocalBitApiTransactionResponse> => {
+): Promise<LocalBitApiTransaction[]> => {
   const { data } = await axios.get(
     `${BASE_URL}/transactions/${address.address}`
   );
@@ -20,7 +20,7 @@ export const getTransactionsFromAddress = async (
 
 export const getUtxosFromAddress = async (
   address: Address
-): Promise<LocalBitApiUTXOResponse> => {
+): Promise<LocalBitApiUTXO[]> => {
   const { data } = await axios.get(
     `${BASE_URL}/utxos/${address.address}`
   );

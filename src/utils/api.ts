@@ -27,7 +27,7 @@ export async function fetchTransactions(
                 currentTransactionBatch.push(...addressTransactions);
             }
             if (network === networks.regtest) {
-                const { transactions } = await getLocalTranxFromAddress(
+                const transactions = await getLocalTranxFromAddress(
                     currentAddress
                 );
                 currentTransactionBatch.push(
@@ -90,7 +90,7 @@ export async function getUtxosFromAddress(
         return getUtxosUsingBlockstream(address);
     }
     if (network === networks.regtest) {
-        const { utxos } = await getUtxosUsingLocalBitapi(address);
+        const utxos = await getUtxosUsingLocalBitapi(address);
         return utxos.map((utxo) => ({
             ...utxo,
             status: {
@@ -99,7 +99,7 @@ export async function getUtxosFromAddress(
                 block_hash: '',
                 block_time: 0,
             },
-            value: utxo.satoshis,
+            value: utxo.amount * 1000000,
         }));
     }
     return [];
