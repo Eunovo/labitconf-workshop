@@ -32,6 +32,7 @@ import {
   fetchTransactions,
   getUtxosFromAddress
 } from "./utils/api"
+import { importAddress } from "./utils/local-bitapi";
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -115,6 +116,13 @@ export default function App() {
   // Transactions
   useEffect(() => {
     const fetchAndSetTranx = async () => {
+      if (network === networks.regtest) {
+        for (const address of addresses.concat(changeAddresses)) {
+          if (!address.address) continue;
+          await importAddress({ address: address.address, label: address.derivationPath });
+        }
+      }
+
       const tranxs = await fetchTransactions(
         addresses,
         changeAddresses,

@@ -73,3 +73,11 @@ export interface LocalBitApiTransactionBroadcastResponse {
     txid: string;
 }
 
+export interface LocalBitApiImportAddressBody {
+    address: string;
+    label: string;
+}
+
+export interface LocalBitApiImportAddressResponse {
+    message: string
+}

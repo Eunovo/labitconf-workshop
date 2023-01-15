@@ -4,7 +4,9 @@ import {
     LocalBitApiTransactionBroadcastBody,
     LocalBitApiTransaction,
     LocalBitApiUTXO,
-    LocalBitApiTransactionBroadcastResponse
+    LocalBitApiTransactionBroadcastResponse,
+    LocalBitApiImportAddressBody,
+    LocalBitApiImportAddressResponse
 } from "src/types";
 
 const BASE_URL = "http://localhost:4000/api";
@@ -40,3 +42,9 @@ export const broadcastTx = async (
   return data;
 };
 
+export const importAddress = async (
+  body: LocalBitApiImportAddressBody
+): Promise<LocalBitApiImportAddressResponse> => {
+  const { data } = await axios.post(`${BASE_URL}/import-address`, body);
+  return data;
+}
