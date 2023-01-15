@@ -4,7 +4,6 @@ import {
   payments,
   Psbt,
   bip32,
-  networks,
   opcodes,
   script,
   crypto,
