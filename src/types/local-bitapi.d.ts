@@ -1,11 +1,40 @@
-export interface LocalBitApiTransaction {
+interface IVin {
     txid: string;
     vout: number;
-    scriptPubKey: string;
-    amount: number;
-    satoshis: number;
-    height: number;
+    scriptSig: {
+      asm: string;
+      hex: string;
+    },
+    sequence: number;
+    txinwitness: string[];
+}
+interface IVout {
+    value: number;
+    n: number;
+    scriptPubKey: {
+      asm: string;
+      hex: string;
+      reqSigs: number;
+      type: string;
+      addresses: string[];
+    }
+}
+
+export interface LocalBitApiTransaction {
+    txid: string;
+    hash: string;
+    version: number;
+    size: number;
+    vsize: number;
+    weight: number;
+    locktime: number;
+    vin: IVin[];
+    vout: IVout[];
+    hex: string;
+    blockhash: string;
     confirmations: number;
+    time: number;
+    blocktime: number;
 }
 
 export interface LocalBitApiTransactionResponse {
@@ -33,7 +62,7 @@ export interface LocalBitApiUTXO {
 }
 
 export interface LocalBitApiUTXOResponse {
-    utxos: IUTXO[];
+    utxos: LocalBitApiUTXO[];
 }
 
 export interface LocalBitApiTransactionBroadcastBody {

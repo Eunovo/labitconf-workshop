@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import { MenuIcon } from "@heroicons/react/outline";
+import { networks } from "bitcoinjs-lib";
 
 import Sidebar from "src/components/Sidebar";
 
@@ -22,18 +23,15 @@ import {
 } from "./utils/bitcoinjs-lib";
 
 import {
-  getTransactionsFromAddress,
-  getUtxosFromAddress,
-} from "./utils/blockstream-api";
-
-import { serializeTxs } from "./utils";
-
-import {
   Address,
-  BlockstreamAPITransactionResponse,
   DecoratedTx,
   DecoratedUtxo,
 } from "src/types";
+
+import {
+  fetchTransactions,
+  getUtxosFromAddress
+} from "./utils/api"
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,6 +42,7 @@ export default function App() {
   const [changeAddresses, setChangeAddresses] = useState<Address[]>([]); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [transactions, setTransactions] = useState<DecoratedTx[]>([]); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [utxos, setUtxos] = useState<DecoratedUtxo[]>([]); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [network, _setNetwork] = useState(networks.regtest);
 
   // Mnemonic / Private Key / XPub
   useEffect(() => {
@@ -62,7 +61,7 @@ export default function App() {
 
     const getSeed = async () => {
       try {
-        const newMasterPrivateKey = await getMasterPrivateKey(mnemonic);
+        const newMasterPrivateKey = await getMasterPrivateKey(mnemonic, network);
         setMasterFingerprint(newMasterPrivateKey.fingerprint);
         const derivationPath = "m/84'/0'/0'"; // P2WPKH
         const newXpub = getXpubFromPrivateKey(
@@ -75,7 +74,7 @@ export default function App() {
       }
     };
     getSeed();
-  }, [mnemonic]);
+  }, [mnemonic, network]);
 
   // Addresses
   useEffect(() => {
@@ -84,8 +83,8 @@ export default function App() {
 
       for (let i = 0; i < 10; i++) {
         const derivationPath = `0/${i}`;
-        const currentChildPubkey = deriveChildPublicKey(xpub, derivationPath);
-        const currentAddress = getAddressFromChildPubkey(currentChildPubkey);
+        const currentChildPubkey = deriveChildPublicKey(xpub, derivationPath, network);
+        const currentAddress = getAddressFromChildPubkey(currentChildPubkey, network);
         currentAddressBatch.push({
           ...currentAddress,
           derivationPath,
@@ -98,8 +97,8 @@ export default function App() {
       const currentChangeAddressBatch: Address[] = [];
       for (let i = 0; i < 10; i++) {
         const derivationPath = `1/${i}`;
-        const currentChildPubkey = deriveChildPublicKey(xpub, derivationPath);
-        const currentAddress = getAddressFromChildPubkey(currentChildPubkey);
+        const currentChildPubkey = deriveChildPublicKey(xpub, derivationPath, network);
+        const currentAddress = getAddressFromChildPubkey(currentChildPubkey, network);
         currentChangeAddressBatch.push({
           ...currentAddress,
           derivationPath,
@@ -111,35 +110,23 @@ export default function App() {
     } catch (e) {
       console.log(e);
     }
-  }, [masterFingerprint, xpub]);
+  }, [masterFingerprint, xpub, network]);
 
   // Transactions
   useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const currentTransactionBatch: BlockstreamAPITransactionResponse[] = [];
-        for (let i = 0; i < 10; i++) {
-          const currentAddress = addresses[i];
-          const addressTransactions = await getTransactionsFromAddress(
-            currentAddress
-          );
-          currentTransactionBatch.push(...addressTransactions);
-        }
-
-        const serializedTxs = serializeTxs(
-          currentTransactionBatch,
-          addresses,
-          changeAddresses
-        );
-
-        setTransactions(serializedTxs);
-      } catch (e) {
-        console.log(e);
-      }
+    const fetchAndSetTranx = async () => {
+      const tranxs = await fetchTransactions(
+        addresses,
+        changeAddresses,
+        network
+      );
+      
+      if (!tranxs) return;
+      setTransactions(tranxs);
     };
 
-    fetchTransactions();
-  }, [addresses, changeAddresses]);
+    fetchAndSetTranx();
+  }, [addresses, changeAddresses, network]);
 
   // UTXOs
   useEffect(() => {
@@ -150,7 +137,9 @@ export default function App() {
 
         for (let i = 0; i < allAddresses.length; i++) {
           const currentAddress: Address = allAddresses[i];
-          const utxos = await getUtxosFromAddress(currentAddress);
+          const utxos = await getUtxosFromAddress(currentAddress, network);
+
+          if (!utxos) return;
 
           for (let j = 0; j < utxos.length; j++) {
             deocratedUtxos.push({
