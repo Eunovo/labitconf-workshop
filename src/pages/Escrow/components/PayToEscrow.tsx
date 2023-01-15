@@ -2,7 +2,7 @@ import { Network, Psbt } from "bitcoinjs-lib";
 import { useState } from "react";
 import CreateTxForm from "./CreateTxForm";
 import TransactionSummary from "./TransactionSummary";
-import { broadcastTx } from "src/utils/blockstream-api";
+import { broadcastTx } from "src/utils/api";
 import { Address, DecoratedUtxo } from "src/types";
 import { createLockTransaction, signTransaction } from "src/utils/bitcoinjs-lib";
 
@@ -58,7 +58,7 @@ export default function PayToEscrow({ utxos, mnemonic, revocationAddress, change
                   <TransactionSummary
                     transaction={transaction!}
                     utxos={utxos}
-                    broadcastTx={broadcastTx}
+                    broadcastTx={(txHex) => broadcastTx(network, txHex)}
                   />
                 )}
               </div>
