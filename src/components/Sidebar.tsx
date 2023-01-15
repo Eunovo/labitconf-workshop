@@ -10,6 +10,7 @@ import {
   XIcon,
   CogIcon,
   MailIcon,
+  DocumentReportIcon
 } from "@heroicons/react/outline";
 
 function classNames(...classes: string[]) {
@@ -59,6 +60,12 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: Props) {
       href: "/send",
       icon: PaperAirplaneIcon,
       current: location.pathname === "/send",
+    },
+    {
+      name: "Escrow",
+      href: "/escrow",
+      icon: DocumentReportIcon,
+      current: location.pathname === "/escrow",
     },
     {
       name: "Settings",

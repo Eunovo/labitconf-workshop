@@ -10,6 +10,7 @@ import Send from "src/pages/Send";
 import Receive from "src/pages/Receive";
 import Transactions from "src/pages/Transactions";
 import Utxos from "src/pages/UTXOs";
+import Escrow from "src/pages/Escrow";
 import Settings from "src/pages/Settings";
 
 import {
@@ -214,6 +215,13 @@ export default function App() {
           </Route>
           <Route exact path="/utxos">
             <Utxos utxos={utxos} />
+          </Route>
+          <Route exact path="/escrow">
+            <Escrow
+              utxos={utxos}
+              mnemonic={mnemonic}
+              changeAddresses={changeAddresses}
+            />
           </Route>
           <Route exact path="/settings">
             <Settings mnemonic={mnemonic} xpub={xpub} />
