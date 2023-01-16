@@ -12,7 +12,7 @@ import {
 } from "bitcoinjs-lib";
 import coinselect from "coinselect";
 
-import { Address, DecoratedUtxo } from "src/types";
+import { Address, DecoratedUtxo, VOut } from "src/types";
 
 export const getNewMnemonic = (): string => {
   const mnemonic = generateMnemonic(256);
@@ -154,6 +154,8 @@ export const createLockTransaction = async (
     opcodes.OP_ENDIF
   ]);
 
+  console.log(locking_script.toString("hex"));
+
   const p2wsh = payments.p2wsh({
     redeem: { output: locking_script, network },
     network
@@ -207,6 +209,76 @@ export const createLockTransaction = async (
   return psbt;
 }
 
+export const decodeScript = (
+  scriptAsm: string
+) => {
+  return script.decompile(Buffer.from(scriptAsm, "hex")) ?? [];
+}
+
+export const isRedeemAddress = (locking_script: (number | Buffer)[], addr: Address) => {
+  const { data } = address.fromBech32(addr.address ?? "");
+  const redeemAddr = locking_script[7];
+  if (typeof redeemAddr === 'number') return false;
+  const result = redeemAddr.compare(data);
+
+  return result === 0;
+}
+
+export const createRedeemTransaction = async (
+  vin: { txid: string, vout: number, value: number, locking_script: any[], bip32Derivation: any, scriptPubKey: VOut['scriptPubKey'] },
+  recipientAddress: string,
+  secret: string,
+  network: Network
+) => {
+  const preimage = Buffer.from(secret, 'hex');
+  const redeemScript = script.compile([
+    preimage,
+    ...vin.locking_script
+  ]);
+  const locking_script = script.compile(vin.locking_script);
+  const p2wsh = payments.p2wsh({
+    redeem: { output: locking_script, network }
+  });
+
+  const psbt = new Psbt({ network });
+  psbt.addInput({
+    hash: vin.txid,
+    index: vin.vout,
+    witnessUtxo: { script: Buffer.from(vin.scriptPubKey.hex, "hex"), value: vin.value },
+    witnessScript: redeemScript,
+    bip32Derivation: [vin.bip32Derivation]
+  });
+
+  psbt.addOutput({
+    address: recipientAddress,
+    value: vin.value
+  });
+
+  return psbt;
+}
+
+// export const createRevocationTransaction = async (
+//   vin: { txid: string, vout: number, value: number },
+//   recipientAddress: string,
+//   bip32Derivation: DecoratedUtxo['bip32Derivation'],
+//   network: Network
+// ) => {
+//   const psbt = new Psbt({ network });
+
+//   psbt.addInput({
+//     hash: vin.txid,
+//     index: vin.vout,
+//     bip32Derivation
+//   });
+
+//   psbt.addOutput({
+//     address: recipientAddress,
+//     value: vin.value
+//   });
+
+//   return psbt;
+// }
+
 export const signTransaction = async (
   psbt: Psbt,
   mnemonic: string,
@@ -214,6 +286,8 @@ export const signTransaction = async (
 ): Promise<Psbt> => {
   const seed = await mnemonicToSeed(mnemonic);
   const root = bip32.fromSeed(seed, network);
+
+  psbt.signInputHD(0, root);
 
   psbt.signAllInputsHD(root);
   psbt.validateSignaturesOfAllInputs();
