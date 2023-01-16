@@ -15,7 +15,16 @@ export const getTransactionsFromAddress = async (
   address: Address
 ): Promise<LocalBitApiTransaction[]> => {
   const { data } = await axios.get(
-    `${BASE_URL}/transactions/${address.address}`
+    `${BASE_URL}/transactions/by-address/${address.address}`
+  );
+  return data;
+};
+
+export const getTransactionByTxId = async (
+  txid: string
+): Promise<LocalBitApiTransaction> => {
+  const { data } = await axios.get(
+    `${BASE_URL}/transactions/by-txid/${txid}`
   );
   return data;
 };
