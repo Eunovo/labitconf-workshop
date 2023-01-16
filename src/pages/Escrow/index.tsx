@@ -3,15 +3,25 @@ import { useState } from "react";
 import { Address, DecoratedUtxo } from "src/types";
 import PayToEscrow from "./components/PayToEscrow";
 import { Network } from "bitcoinjs-lib";
+import Redeem from "./components/Redeem";
 
 interface Props {
     utxos: DecoratedUtxo[];
     mnemonic: string;
+    addresses: Address[];
     changeAddresses: Address[];
+    getBip32Derivation: (address: Address) => any;
     network: Network;
 }
 
-export default function Escrow({ utxos, mnemonic, changeAddresses, network }: Props) {
+export default function Escrow({
+    utxos,
+    mnemonic,
+    addresses,
+    changeAddresses,
+    getBip32Derivation,
+    network
+}: Props) {
     const [currentTab, setCurrentTab] = useState("create");
     
 
@@ -21,13 +31,11 @@ export default function Escrow({ utxos, mnemonic, changeAddresses, network }: Pr
             href: "create",
             current: currentTab === "create",
         },
-        // {
-        //   name: "Change",
-        //   href: "change",
-        //   count: changeAddresses.filter((address) => address.type !== "used")
-        //     .length,
-        //   current: currentTab === "change",
-        // },
+        {
+          name: "Redeem",
+          href: "redeem",
+          current: currentTab === "redeem",
+        },
     ];
 
     return (
@@ -80,7 +88,7 @@ export default function Escrow({ utxos, mnemonic, changeAddresses, network }: Pr
                                 </div>
                             </div>
 
-                            {currentTab === "create" ? (
+                            {currentTab === "create" && (
                                 (
                                     <PayToEscrow
                                         utxos={utxos}
@@ -90,7 +98,17 @@ export default function Escrow({ utxos, mnemonic, changeAddresses, network }: Pr
                                         mnemonic={mnemonic}
                                     />
                                 )
-                            ) : null}
+                            )}
+                            {
+                                currentTab === "redeem" && (
+                                    <Redeem
+                                        addresses={addresses.concat(changeAddresses)}
+                                        getBip32Derivation={getBip32Derivation}
+                                        network={network}
+                                        mnemonic={mnemonic}
+                                    />
+                                )
+                            }
                         </div>
                     </div>
                 </div>

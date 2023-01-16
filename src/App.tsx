@@ -34,6 +34,8 @@ import {
 } from "./utils/api"
 import { importAddress } from "./utils/local-bitapi";
 
+const DERIVATION_PATH = "m/84'/0'/0'";
+
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mnemonic, setMnemonic] = useState(""); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -64,10 +66,9 @@ export default function App() {
       try {
         const newMasterPrivateKey = await getMasterPrivateKey(mnemonic, network);
         setMasterFingerprint(newMasterPrivateKey.fingerprint);
-        const derivationPath = "m/84'/0'/0'"; // P2WPKH
         const newXpub = getXpubFromPrivateKey(
           newMasterPrivateKey,
-          derivationPath
+          DERIVATION_PATH
         );
         setXpub(newXpub);
       } catch (e) {
@@ -128,7 +129,7 @@ export default function App() {
         changeAddresses,
         network
       );
-      
+
       if (!tranxs) return;
       setTransactions(tranxs);
     };
@@ -155,7 +156,7 @@ export default function App() {
               bip32Derivation: [
                 {
                   pubkey: currentAddress.pubkey!,
-                  path: `m/84'/0'/0'/${currentAddress.derivationPath}`,
+                  path: `${DERIVATION_PATH}/${currentAddress.derivationPath}`,
                   masterFingerprint: masterFingerprint,
                 },
               ],
@@ -171,6 +172,12 @@ export default function App() {
 
     fetchUtxos();
   }, [addresses, changeAddresses, masterFingerprint]);
+
+  const getBip32Derivation = (address: Address) => ({
+    pubkey: address.pubkey!,
+    path: `${DERIVATION_PATH}/${address.derivationPath}`,
+    masterFingerprint: masterFingerprint,
+  });
 
   return (
     <Router>
@@ -217,7 +224,9 @@ export default function App() {
             <Escrow
               utxos={utxos}
               mnemonic={mnemonic}
+              addresses={addresses}
               changeAddresses={changeAddresses}
+              getBip32Derivation={getBip32Derivation}
               network={network}
             />
           </Route>
