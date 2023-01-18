@@ -17,6 +17,7 @@ interface Props {
 export default function PayToEscrow({ utxos, mnemonic, revocationAddress, changeAddress, network }: Props) {
     const [step, setStep] = useState(0); // eslint-disable-line @typescript-eslint/no-unused-vars
     const [transaction, setTransaction] = useState<Psbt | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
+    const [spendingTxHex, setSpendingTxHex] = useState("");
     const [error, setError] = useState("");
 
     const createTransactionWithFormValues = async (
@@ -25,18 +26,18 @@ export default function PayToEscrow({ utxos, mnemonic, revocationAddress, change
         amountToSend: number
     ) => {
         try {
-            const tranx = await createLockTransaction(
+            const { fundingPsbt: tranx, partialSpendingPsbt } = await createLockTransaction(
               utxos,
               secret,
               recipientAddress,
               revocationAddress,
               amountToSend,
               changeAddress,
+              mnemonic,
               network
             );
-            setTransaction(
-              await signTransaction(tranx, mnemonic, network)  
-            );
+            setTransaction(tranx);
+            setSpendingTxHex(partialSpendingPsbt.toHex());
             setStep(1);
         } catch (e) {
             setError((e as Error).message);
@@ -57,6 +58,7 @@ export default function PayToEscrow({ utxos, mnemonic, revocationAddress, change
                 {step === 1 && (
                   <TransactionSummary
                     transaction={transaction!}
+                    spendingTxHex={spendingTxHex}
                     utxos={utxos}
                     broadcastTx={(txHex) => broadcastTx(network, txHex)}
                   />

@@ -8,11 +8,13 @@ import {
   script,
   crypto,
   address,
-  Network
+  Network,
+  ECPair,
 } from "bitcoinjs-lib";
 import coinselect from "coinselect";
 
 import { Address, DecoratedUtxo, VOut } from "src/types";
+import { witnessStackToScriptWitness } from "./witness-stack-to-script-witness";
 
 export const getNewMnemonic = (): string => {
   const mnemonic = generateMnemonic(256);
@@ -120,6 +122,7 @@ export const createLockTransaction = async (
   revocationAddress: Address,
   amountInSatoshis: number,
   changeAddress: Address,
+  mnemonic: string,
   network: Network
 ) => {
   const preimage = Buffer.from(secret, 'hex')
@@ -132,7 +135,6 @@ export const createLockTransaction = async (
 
   // Create the P2WSH address for the script
   const locking_script = script.compile([
-    opcodes.OP_DUP,
     opcodes.OP_HASH160,
     preimageHash,
     opcodes.OP_EQUAL,
@@ -153,8 +155,6 @@ export const createLockTransaction = async (
     opcodes.OP_CHECKSIG,
     opcodes.OP_ENDIF
   ]);
-
-  console.log(locking_script.toString("hex"));
 
   const p2wsh = payments.p2wsh({
     redeem: { output: locking_script, network },
@@ -179,10 +179,10 @@ export const createLockTransaction = async (
   if (fee > amountInSatoshis) throw new Error("Fee is too high!");
 
   // Now you can create a transaction that sends some bitcoins to this P2wsh address
-  const psbt = new Psbt({ network })
+  const fundingPsbt = new Psbt({ network })
 
   inputs.forEach((input) => {
-    psbt.addInput({
+    fundingPsbt.addInput({
       hash: input.txid,
       index: input.vout,
       sequence: 0xfffffffd, // enables RBF
@@ -200,61 +200,102 @@ export const createLockTransaction = async (
       output.address = changeAddress.address!;
     }
 
-    psbt.addOutput({
+    fundingPsbt.addOutput({
       address: output.address,
       value: output.value,
     });
   });
 
-  return psbt;
+  await signTransaction(fundingPsbt, mnemonic, network);
+
+  const partialSpendingPsbt = new Psbt({ network });
+  partialSpendingPsbt.addInput({
+    hash: fundingPsbt.extractTransaction().getId(),
+    index: 0,
+    witnessUtxo: { script: p2wsh.output!, value: amountInSatoshis },
+    witnessScript: locking_script
+  });
+
+  return { fundingPsbt, partialSpendingPsbt };
+}
+
+export const decodePsbtHex = (hex: string) => {
+  return Psbt.fromHex(hex);
 }
 
 export const decodeScript = (
-  scriptAsm: string
+  scriptBuf: Buffer
 ) => {
-  return script.decompile(Buffer.from(scriptAsm, "hex")) ?? [];
+  return script.decompile(scriptBuf) ?? [];
 }
 
 export const isRedeemAddress = (locking_script: (number | Buffer)[], addr: Address) => {
   const { data } = address.fromBech32(addr.address ?? "");
-  const redeemAddr = locking_script[7];
+  const redeemAddr = locking_script[6];
   if (typeof redeemAddr === 'number') return false;
   const result = redeemAddr.compare(data);
 
   return result === 0;
 }
 
-export const createRedeemTransaction = async (
-  vin: { txid: string, vout: number, value: number, locking_script: any[], bip32Derivation: any, scriptPubKey: VOut['scriptPubKey'] },
-  recipientAddress: string,
-  secret: string,
+export const getPrivateKeyForDerivationPath = async (
+  derivationPath: string,
+  mnemonic: string,
   network: Network
 ) => {
-  const preimage = Buffer.from(secret, 'hex');
-  const redeemScript = script.compile([
-    preimage,
-    ...vin.locking_script
-  ]);
-  const locking_script = script.compile(vin.locking_script);
-  const p2wsh = payments.p2wsh({
-    redeem: { output: locking_script, network }
-  });
+  const seed = await mnemonicToSeed(mnemonic);
+  const privateKey = bip32.fromSeed(seed, network)
+    .derivePath(derivationPath)
+    .privateKey;
 
-  const psbt = new Psbt({ network });
-  psbt.addInput({
-    hash: vin.txid,
-    index: vin.vout,
-    witnessUtxo: { script: Buffer.from(vin.scriptPubKey.hex, "hex"), value: vin.value },
-    witnessScript: redeemScript,
-    bip32Derivation: [vin.bip32Derivation]
-  });
+  if (!privateKey)
+    throw new Error(`Could not get private key for ${derivationPath}`);
 
-  psbt.addOutput({
-    address: recipientAddress,
-    value: vin.value
-  });
+  return privateKey;
+}
 
-  return psbt;
+export const createRedeemTransaction = async (
+  psbt: Psbt,
+  address: Address,
+  secret: string,
+  privateKey: Buffer,
+  network: Network
+) => {
+  const redeemPsbt = new Psbt({ network }, psbt.data);
+  redeemPsbt.addOutput({
+    address: address.address!,
+    value: psbt.data.inputs[0].witnessUtxo!.value - 200, // Transactin fee of 200 satoshis
+  });
+  const signer = ECPair.fromPrivateKey(privateKey);
+  redeemPsbt.signInput(0, signer);
+
+  const finalizeInput = (_inputIndex: number, input: any) => {
+    const preimage = Buffer.from(secret, 'hex');
+
+    const redeemPayment = payments.p2wsh({
+      redeem: {
+        input: script.compile([
+          input.partialSig[0].signature,
+          address.pubkey,
+          preimage
+        ]),
+        output: input.witnessScript
+      }
+    });
+
+    const finalScriptWitness = witnessStackToScriptWitness(
+      redeemPayment.witness ?? []
+    );
+
+    return {
+      finalScriptSig: Buffer.from(""),
+      finalScriptWitness
+    }
+  }
+
+  redeemPsbt.finalizeInput(0, finalizeInput);
+
+  return redeemPsbt;
 }
 
 // export const createRevocationTransaction = async (
@@ -286,8 +327,6 @@ export const signTransaction = async (
 ): Promise<Psbt> => {
   const seed = await mnemonicToSeed(mnemonic);
   const root = bip32.fromSeed(seed, network);
-
-  psbt.signInputHD(0, root);
 
   psbt.signAllInputsHD(root);
   psbt.validateSignaturesOfAllInputs();

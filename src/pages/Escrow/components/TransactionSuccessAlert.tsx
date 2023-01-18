@@ -1,10 +1,12 @@
 import { CheckCircleIcon } from "@heroicons/react/solid";
+import { copyToClipboard } from "src/utils/copy-to-clipboard";
 
 interface Props {
   txid: string;
+  spendingTxHex: string;
 }
 
-const TransactionSuccessAlert = ({ txid }: Props) => {
+const TransactionSuccessAlert = ({ txid, spendingTxHex }: Props) => {
   return (
     <div className="rounded-md bg-green-50 p-4 mt-4 border border-gray-200 shadow">
       <div className="flex">
@@ -35,6 +37,24 @@ const TransactionSuccessAlert = ({ txid }: Props) => {
               >
                 View status
               </a>
+            </div>
+          </div>
+          <div className="mt-2 text-sm text-green-700">
+            <p>
+              Copy this transaction hex. You will be required to provide this to spend spend these coins.
+            </p>
+            <p className="truncate w-72">Spending Transaction: {spendingTxHex}</p>
+          </div>
+          <div className="mt-4">
+            <div className="-mx-2 -my-1.5 flex">
+              <button
+                className="bg-green-50 px-2 py-1.5 rounded-md text-sm font-medium text-green-800 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-green-50 focus:ring-green-600"
+                onClick={() => {
+                  copyToClipboard(spendingTxHex);
+                }}
+              >
+                Copy
+              </button>
             </div>
           </div>
         </div>

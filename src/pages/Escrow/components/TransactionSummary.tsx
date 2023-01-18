@@ -12,13 +12,14 @@ import TransactionSuccessAlert from "./TransactionSuccessAlert";
 
 interface Props {
   transaction: Psbt;
+  spendingTxHex: string;
   utxos: DecoratedUtxo[];
   broadcastTx: (txHex: string) => Promise<string>;
 }
 
 const NOT_SIGNED_TEXT = "Not signed!";
 
-const TransactionSummary = ({ transaction, utxos, broadcastTx }: Props) => {
+const TransactionSummary = ({ transaction, spendingTxHex, utxos, broadcastTx }: Props) => {
   const [txId, setTxId] = useState("");
   const [error, setError] = useState("");
 
@@ -50,7 +51,10 @@ const TransactionSummary = ({ transaction, utxos, broadcastTx }: Props) => {
     <div className="mt-10 lg:mt-0">
       <h2 className="text-lg font-medium text-gray-900">Transaction summary</h2>
 
-      {txId && <TransactionSuccessAlert txid={txId} />}
+      {txId && <TransactionSuccessAlert
+        txid={txId}
+        spendingTxHex={spendingTxHex}
+      />}
 
       <div className="mt-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <h3 className="sr-only">Items in your transaction</h3>

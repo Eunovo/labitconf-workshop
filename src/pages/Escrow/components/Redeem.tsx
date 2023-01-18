@@ -2,7 +2,7 @@ import { Network } from "bitcoinjs-lib";
 import { useState } from "react";
 import { Address, DecoratedUtxo } from "src/types";
 import { broadcastTx } from "src/utils/api";
-import { createRedeemTransaction, decodeScript, isRedeemAddress, signTransaction } from "src/utils/bitcoinjs-lib";
+import { createRedeemTransaction, decodePsbtHex, decodeScript, getPrivateKeyForDerivationPath, isRedeemAddress, signTransaction } from "src/utils/bitcoinjs-lib";
 import { getTransactionByTxId } from "src/utils/local-bitapi";
 
 interface Props {
@@ -13,40 +13,29 @@ interface Props {
 }
 
 const Redeem = ({ addresses, getBip32Derivation, network, mnemonic }: Props) => {
-    const [txid, setTxid] = useState("");
+    const [txHex, setTxHex] = useState("");
     const [secret, setSecret] = useState("");
     const [error, setError] = useState("");
 
     const redeem = async () => {
         try {
-            const transaction = await getTransactionByTxId(txid);
-            const value = transaction.vout[0].value * 100000000;
-            const scriptAsm = transaction.vout[0].scriptPubKey.hex;
-
-            const locking_script = decodeScript(
-                "76a914b472a266d0bd89c13706a4132ccfb16f7c3b9fcb876376a914efccb9ed337654fc3959b35d67ad8a9c5a5191e688ac670470b8c463b17576a914cf139091b2a74df96c09fdc7817f54b8c776208a88ac68"
+            const tranx = decodePsbtHex(txHex);
+            const address = addresses.find(
+                (value) => isRedeemAddress(
+                    decodeScript(tranx.data.inputs[0].witnessScript!),
+                    value
+                )
             );
-
-            const address = addresses.find((value) => isRedeemAddress(locking_script, value));
 
             if (!address)
                 throw new Error("No address matched the redeem address");
-
-            let psbt = await createRedeemTransaction(
-                {
-                    txid,
-                    vout: 0,
-                    value,
-                    locking_script,
-                    bip32Derivation: getBip32Derivation(address),
-                    scriptPubKey: transaction.vout[0].scriptPubKey
-                },
-                addresses[0].address!,
-                secret,
-                network
+            const { path: derivationPath } = getBip32Derivation(address);
+            const privateKey = await getPrivateKeyForDerivationPath(
+                derivationPath, mnemonic, network);
+            const psbt = await createRedeemTransaction(
+                tranx, address, secret, privateKey, network
             );
-            psbt = await signTransaction(psbt, mnemonic, network);
-            broadcastTx(network, psbt.toHex());
+            broadcastTx(network, psbt.extractTransaction().toHex());
         } catch (error: any) {
             console.log(error);
             setError(error.message);
@@ -65,7 +54,7 @@ const Redeem = ({ addresses, getBip32Derivation, network, mnemonic }: Props) => 
                                         htmlFor="company-website"
                                         className="block text-sm font-medium text-gray-700"
                                     >
-                                        Enter Script transaction id...
+                                        Enter Spending transaction hex...
                                     </label>
                                     <div className="mt-1 flex rounded-md shadow-sm">
                                         <input
@@ -74,8 +63,8 @@ const Redeem = ({ addresses, getBip32Derivation, network, mnemonic }: Props) => 
                                             id="company-website"
                                             className="focus:ring-tabconf-blue-500 focus:border-tabconf-blue-500 flex-1 block w-full rounded-md sm:text-sm border-gray-300"
                                             placeholder=""
-                                            value={txid}
-                                            onChange={(e) => setTxid(e.target.value)}
+                                            value={txHex}
+                                            onChange={(e) => setTxHex(e.target.value)}
                                         />
                                     </div>
                                 </div>
@@ -88,7 +77,7 @@ const Redeem = ({ addresses, getBip32Derivation, network, mnemonic }: Props) => 
                                         htmlFor="company-website"
                                         className="block text-sm font-medium text-gray-700"
                                     >
-                                        Set redemption secret...
+                                        Enter redemption secret...
                                     </label>
                                     <div className="mt-1 flex rounded-md shadow-sm">
                                         <input
